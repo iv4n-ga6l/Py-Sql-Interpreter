@@ -47,3 +47,7 @@ ItemName (VARCHAR(255))
 Price (DECIMAL(10, 2))
 StockQuantity (INT)
 CategoryId (INT)
+2024-06-11 23:39:45,672 INFO:Tables:
+Category
+Items
+2024-06-11 23:40:43,133 ERROR:Error inserting into table: UNIQUE constraint failed: Items.ItemID
