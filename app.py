@@ -1,6 +1,5 @@
 import sqlite3
 import os
-import sys
 
 def main():
     connection = None
@@ -46,6 +45,8 @@ def process_query(query, connection):
             return drop_database(parts[2], connection)
         else:
             return connection, "Invalid DROP command"
+    elif command == "LIST":
+        return list_databases()
     else:
         return connection, "Unknown command"
 
@@ -148,6 +149,16 @@ def drop_table(table_name, connection):
         return connection, f"Table {table_name} dropped successfully"
     except sqlite3.Error as e:
         return connection, f"Error dropping table: {e}"
+
+def list_databases():
+    try:
+        databases = [f.split('.')[0] for f in os.listdir("Dbs") if f.endswith(".db")]
+        if databases:
+            return None, "\n".join(databases)
+        else:
+            return None, "No databases found"
+    except OSError as e:
+        return None, f"Error listing databases: {e}"
 
 if __name__ == "__main__":
     main()
