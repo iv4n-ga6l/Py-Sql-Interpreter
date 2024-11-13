@@ -5,7 +5,7 @@ import shutil
 import logging
 
 # Set up logging
-logging.basicConfig(filename='db_manager.log', level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(filename='db_logs.log', level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 def main():
     connection = None
