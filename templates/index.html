@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Interpreter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    
+    <style>
+        .CodeMirror {
+            height: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+        }
+        
+        .cell.dragging {
+            opacity: 0.5;
+        }
+        
+        .cell-handle {
+            cursor: move;
+        }
+        
+        .cell {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">SQL Interpreter</h1>
+        
+        <div class="space-y-6">
+            <!-- Cell Template -->
+            <div class="cell bg-white rounded-lg shadow-sm p-4 space-y-4 mb-4" id="cell-template" hidden>
+                <div class="flex items-center space-x-2">
+                    <div class="cell-handle p-2 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9v1a1 1 0 01-2 0V6H4a1 1 0 110-2h3V3a1 1 0 011-1zm0 8a1 1 0 011 1v1h3a1 1 0 110 2H9v1a1 1 0 01-2 0v-1H4a1 1 0 110-2h3v-1a1 1 0 011-1z" />
+                        </svg>
+                    </div>
+                    <div class="text-gray-500 w-16 cell-number"></div>
+                    <div class="flex-grow">
+                        <textarea class="sql-editor w-full"></textarea>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-2 output hidden">
+                    <div class="w-8"></div>
+                    <div class="text-gray-500 w-16 output-number"></div>
+                    <div class="flex-grow">
+                        <pre class="bg-gray-50 p-3 rounded-lg output-content text-balance"></pre>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button class="delete-btn px-3 py-2 text-red-500 hover:bg-red-50 rounded transition">
+                        Delete
+                    </button>
+                    <button class="run-btn px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                        Run▶️
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Active Cell -->
+            <div id="cells-container"></div>
+            
+            <!-- Add Cell Button -->
+            <div class="flex justify-center">
+                <button id="add-cell" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    + Add Cell
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cellCount = 0;
+        let executionCount = 0;
+        const editors = new Map();
+        const cellExecutions = new Map(); // Track execution count for each cell
+
+        // Initialize Sortable
+        const cellsContainer = document.getElementById('cells-container');
+        new Sortable(cellsContainer, {
+            animation: 150,
+            handle: '.cell-handle',
+            ghostClass: 'opacity-50',
+            onEnd: updateCellNumbers
+        });
+
+        function getNextExecutionNumber() {
+            executionCount++;
+            return executionCount;
+        }
+
+        function updateCellNumbers() {
+            const cells = document.querySelectorAll('.cell:not(#cell-template)');
+            cells.forEach((cell, index) => {
+                const execNumber = cellExecutions.get(cell.id) || '*';
+                cell.querySelector('.cell-number').textContent = `In [${execNumber}]:`;
+                const output = cell.querySelector('.output');
+                if (!output.classList.contains('hidden')) {
+                    cell.querySelector('.output-number').textContent = `Out [${execNumber}]:`;
+                }
+            });
+        }
+
+        function createCell() {
+            cellCount++;
+            const template = document.getElementById('cell-template');
+            const cell = template.cloneNode(true);
+            cell.hidden = false;
+            cell.id = `cell-${cellCount}`;
+            
+            // Initialize cell number
+            cell.querySelector('.cell-number').textContent = 'In [*]:';
+            cell.querySelector('.output-number').textContent = 'Out [*]:';
+            
+            const input = cell.querySelector('.sql-editor');
+            const editor = CodeMirror.fromTextArea(input, {
+                mode: 'text/x-sql',
+                lineNumbers: true,
+                theme: 'default',
+                viewportMargin: Infinity,
+                extraKeys: {
+                    'Shift-Enter': function(cm) {
+                        runQuery(cell);
+                    }
+                }
+            });
+            editors.set(cell.id, editor);
+
+            // Add event listeners
+            cell.querySelector('.run-btn').addEventListener('click', () => runQuery(cell));
+            cell.querySelector('.delete-btn').addEventListener('click', () => deleteCell(cell));
+            
+            document.getElementById('cells-container').appendChild(cell);
+            editor.focus();
+            return cell;
+        }
+
+        function deleteCell(cell) {
+            if (document.querySelectorAll('.cell:not(#cell-template)').length > 1) {
+                editors.delete(cell.id);
+                cellExecutions.delete(cell.id);
+                cell.remove();
+            } else {
+                // If it's the last cell, clear it instead of deleting
+                const editor = editors.get(cell.id);
+                editor.setValue('');
+                cell.querySelector('.output').classList.add('hidden');
+                cell.querySelector('.cell-number').textContent = 'In [*]:';
+                cell.querySelector('.output-number').textContent = 'Out [*]:';
+                cellExecutions.delete(cell.id);
+            }
+        }
+
+        async function runQuery(cell) {
+            const execNumber = getNextExecutionNumber();
+            cellExecutions.set(cell.id, execNumber);
+            
+            const editor = editors.get(cell.id);
+            const query = editor.getValue();
+            const output = cell.querySelector('.output');
+            const outputContent = cell.querySelector('.output-content');
+
+            // Update cell numbers before running
+            cell.querySelector('.cell-number').textContent = `In [${execNumber}]:`;
+            cell.querySelector('.output-number').textContent = `Out [${execNumber}]:`;
+
+            try {
+                const response = await fetch('/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                });
+                const data = await response.json();
+                output.classList.remove('hidden');
+                outputContent.textContent = data.result;
+            } catch (error) {
+                output.classList.remove('hidden');
+                outputContent.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'Enter') {
+                    const activeElement = document.activeElement;
+                    const cell = activeElement.closest('.cell');
+                    if (cell) {
+                        e.preventDefault();
+                        runQuery(cell);
+                    }
+                }
+            }
+        });
+
+        document.getElementById('add-cell').addEventListener('click', createCell);
+        // Create initial cell
+        createCell();
+    </script>
+</body>
+</html>

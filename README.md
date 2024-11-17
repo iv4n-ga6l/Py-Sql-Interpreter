@@ -1,5 +1,14 @@
-Simple sql interpreter built in Python with local sqlite database 
+## Sql interpreter
 
+Simple sql interpreter built in Python with local sqlite database. Work both in CLI & Web mode.
+It supports :
+- Database creation
+- Tables (CRUD)
+- Tables export to csv files and tables restoration using csv files 
+- Database backup and restoration
+
+### Example queries
+```sql
 ** CREATE DATABASE Shop
 
 
@@ -18,6 +27,13 @@ CREATE TABLE Items (
     StockQuantity INT,
     CategoryId INT,
     FOREIGN KEY (CategoryId) REFERENCES Category(Id)
+);
+
+CREATE TABLE Recruiters (
+    RecruiterName VARCHAR(255) PRIMARY KEY,
+    Cabinet VARCHAR(255),
+    LinkedIn VARCHAR(255),
+    Mail VARCHAR(255)
 );
 
 
@@ -59,3 +75,15 @@ DELETE FROM Items WHERE ItemID=1;
 
 **Example drop
 DROP TABLE Items;
+```
+
+### Run
+- Web
+```sh
+python app.py
+```
+
+- CLI
+```sh
+python app.py --mode cli
+```
