@@ -46,8 +46,7 @@ def cli_mode():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='SQL Interpreter')
-    parser.add_argument('--mode', choices=['web', 'cli'], default='web',
-                        help='Run in web or CLI mode (default: web)')
+    parser.add_argument('--mode', choices=['web', 'cli'], default='web', help='Run in web or CLI mode (default: web)')
     args = parser.parse_args()
 
     # Create Dbs directory if it doesn't exist
@@ -61,5 +60,4 @@ if __name__ == "__main__":
             cli_mode()
     except KeyboardInterrupt:
         print("\nShutting down...")
-        if db_manager.connection:
-            db_manager.connection.close()
+        db_manager.close_connection()
