@@ -81,7 +81,7 @@
         let cellCount = 0;
         let executionCount = 0;
         const editors = new Map();
-        const cellExecutions = new Map(); // Track execution count for each cell
+        const cellExecutions = new Map();
 
         // Initialize Sortable
         const cellsContainer = document.getElementById('cells-container');
@@ -134,7 +134,6 @@
             });
             editors.set(cell.id, editor);
 
-            // Add event listeners
             cell.querySelector('.run-btn').addEventListener('click', () => runQuery(cell));
             cell.querySelector('.delete-btn').addEventListener('click', () => deleteCell(cell));
             
