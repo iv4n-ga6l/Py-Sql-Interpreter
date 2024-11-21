@@ -263,7 +263,7 @@ class DatabaseManager:
             tables = cursor.fetchall()
             if tables:
                 table_list = "\n".join(table[0] for table in tables)
-                return self.log_and_return(conn, f"Tables:\n{table_list}")
+                return self.log_and_return(conn, f"|Tables|\n{table_list}")
             else:
                 return self.log_and_return(conn, "No tables found in the current database")
         except sqlite3.Error as e:
@@ -283,7 +283,7 @@ class DatabaseManager:
             columns = cursor.fetchall()
             if columns:
                 schema = "\n".join(f"{col[1]} ({col[2]})" for col in columns)
-                return self.log_and_return(conn, f"Schema of {table_name}:\n{schema}")
+                return self.log_and_return(conn, f"|Schema of {table_name}|\n{schema}")
             else:
                 return self.log_and_return(conn, f"No table named {table_name} found")
         except sqlite3.Error as e:
